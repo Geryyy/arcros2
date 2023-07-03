@@ -12,19 +12,24 @@ import arcpy
 import os
 import ament_index_python
 
+# get current time
 
-
-class Hello(Node):
+class Simulation(Node):
 
     def __init__(self):
-        super().__init__('Hello')
+        super().__init__('Simulation')
         self.publisher_ = self.create_publisher(String, 'topic', 10)
         
         # initialize mujoco
         package_path = ament_index_python.get_package_share_directory('arcros2')
         print('package_path: ', package_path)
         assets_path = os.path.join(package_path,"assets")
+        print('assets_path: ', assets_path)
         xml_filepath = os.path.join(assets_path,"mj_shelf.xml")
+        print('xml_filepath: ', xml_filepath)
+        print("cwd: ", os.getcwd())
+        cwd = os.getcwd()
+        os.chdir(assets_path)
         with open(xml_filepath, 'r') as f:
           xml = f.read()
 
@@ -38,6 +43,10 @@ class Hello(Node):
         q0 = self.data.qpos[0:7]
         T_traj = self.Ts
         self.arc_contr.start(self.data.time, q0, q0, T_traj)
+
+
+        self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
+
 
         timer_period = self.Ts
         self.timer = self.create_timer(timer_period, self.timer_callback)
@@ -80,34 +89,44 @@ class Hello(Node):
 
 
     def timer_callback(self):
-        time = self.i_step*self.Ts
-        time_now = time.time() - self.time_begin
-        # print time vs time_now with annotation and fixed format 2.3 decimal places
-        print('time: %2.3f\ttime_now: %2.3f' % (time, time_now))
+        self.com_server.poll()
+        tau_sens_act = np.zeros((7,1))
+        tau_motor_act = np.zeros((7,1))
 
-        if self.i_step < 20:
-            exit()
+        q0 = self.data.qpos[0:7]
+        tau_set = self.arc_contr.update(self.data.time, q0, tau_sens_act, tau_motor_act, False)
+        self.data.ctrl[0:7] = tau_set
+        mujoco.mj_step(self.model, self.data)
+        self.viewer.sync()
+
+        self.com_server.send_robot_data(self.data.time)
+        
 
 
-        # msg = String()
-        # msg.data = 'Hello World: %d' % self.i
-        # self.publisher_.publish(msg)
-        # self.get_logger().info('Publishing: "%s"' % msg.data)
-        # self.i_step += 1
+    def is_running(self):
+        return self.viewer.is_running()
+    
+
+    def stop(self):
+        self.com_server.close()
+        self.viewer.close()
 
 
 def main(args=None):
     rclpy.init(args=args)
 
-    hello_world = Hello()
+    sim = Simulation()
 
-    rclpy.spin(hello_world)
+    while(sim.is_running()):
+      rclpy.spin_once(sim)
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
-    hello_world.destroy_node()
+    sim.stop()
+    sim.destroy_node()
     rclpy.shutdown()
+
 
 
 if __name__ == '__main__':

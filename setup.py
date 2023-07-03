@@ -4,15 +4,6 @@ import os
 
 package_name = 'arcros2'
 
-# This will recursively include all files in the assets directory
-asset_files = glob('assets/**', recursive=True)
-
-# You need to prepend the desired install location to each file
-data_files = []
-for file in asset_files:
-    data_files.append(('share/' + package_name + '/assets/' + os.path.dirname(file), [file]))
-
-
 setup(
     name=package_name,
     version='0.0.0',
@@ -23,8 +14,9 @@ setup(
         ('share/' + package_name, ['package.xml']),
         # Include all XML files from the 'assets' folder
         # Include all launch files.
-        # (os.path.join('share', package_name, 'assets'), glob(os.path.join('assets', '*.xml')))
-    ] + data_files,
+        (os.path.join('share', package_name, 'assets'), glob(os.path.join('assets', '*.xml'))),
+        (os.path.join('share', package_name, 'assets/meshes'), glob(os.path.join('assets','meshes', '*.stl'))),
+    ],# + file_list,
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='Gerald Ebmer',
