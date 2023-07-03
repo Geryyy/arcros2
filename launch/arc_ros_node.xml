@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="fs_Control" default="1000" />
+
+  <node pkg="arc_ros2" exec="IiwaArcNode.py" name="iiwa_arc_node" output="screen">
+    <param name="rate" value="$(var fs_Control)" />
+    <param name="client_ip_addr" value="127.0.0.1" /> 
+    <param name="topic_prefix" value="arc/Iiwa/"/>
+  </node>
+
+  <node pkg="arc_ros2" exec="LinAxisArcNode.py" name="linear_axis_arc_node" output="screen">
+    <param name="rate" value="$(var fs_Control)" />
+    <param name="client_ip_addr" value="127.0.0.1" /> 
+    <param name="topic_prefix" value="arc/LinearAxis/"/>
+  </node>
+</launch>
