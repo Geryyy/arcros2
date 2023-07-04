@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
@@ -44,11 +46,9 @@ class Simulation(Node):
         T_traj = self.Ts
         self.arc_contr.start(self.data.time, q0, q0, T_traj)
 
-
         self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
 
         self.timer = self.create_timer(self.Ts, self.timer_callback)
-        self.time_begin = time.time()
 
     
     def __init_arc(self):

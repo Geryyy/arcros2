@@ -27,7 +27,7 @@ setup(
     entry_points={
         'console_scripts': [
             'iiwajoco = arcros2.iiwajoco:main',
-            'listener = arcros2.listener:main',
+            # 'listener = arcros2.listener:main',
         ],
     },
 )

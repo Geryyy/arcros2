@@ -1,14 +1,18 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
 import rclpy
 import arcpy
 from sensor_msgs.msg import JointState
 from builtin_interfaces.msg import Time
 from sensor_msgs.msg import JointState
-from arc_ros2.msg import TaskSpaceTraj
-from arc_ros2.msg import JointSpaceTraj
-from arc_ros2.msg import ToolParam
-from arc_ros2.msg import PoseState
-from arc_ros2.msg import CartVelTraj
+from arcros2.msg import TaskSpaceTraj
+from arcros2.msg import JointSpaceTraj
+from arcros2.msg import ToolParam
+from arcros2.msg import PoseState
+from arcros2.msg import CartVelTraj
+from arcros2.msg import RobotState
+from geometry_msgs.msg import Pose, Twist
+
 import numpy as np
 from rclpy.node import Node
 
@@ -61,9 +65,13 @@ class IiwaArcNode(Node):
         self.joint_error_publisher = self.create_publisher(JointState, topic_prefix + "joint_error_state", 0)
         self.time_publisher = self.create_publisher(Time, topic_prefix + "time", 0)
         self.pub_timer = self.create_timer(1/rate, self.pub_timer_callback)
+        self.robot_state_publisher = self.create_publisher(RobotState, topic_prefix + "robot_state", 0)
+
+        self.get_logger().info("All Publishers spawned!")
 
     def pub_timer_callback(self):
         # Run publishers
+        self.pub_robot_state()
         self.pub_joint_state()
         self.pub_set_joint_state()
         self.pub_set_cartesian_state()
@@ -151,6 +159,65 @@ class IiwaArcNode(Node):
 
 
     ### publisher methods
+
+    def pub_robot_state(self):
+        robot_state = self.robot.state
+
+        # exit()
+        msg = RobotState()
+
+        # Populate timestamp
+        msg.stamp = self.get_clock().now().to_msg()
+
+        # Populate joint states
+        msg.q_act = robot_state.get_q_act().flatten().tolist()
+        msg.q_dot_act = robot_state.get_q_dot_act().flatten().tolist()
+        msg.q_dotdot_act = robot_state.get_q_dotdot_act().flatten().tolist()
+
+        # Populate joint effort
+        msg.tau = robot_state.get_tau().flatten().tolist()
+
+        # Populate joint setpoints
+        msg.q_set = robot_state.get_q_set().flatten().tolist()
+        msg.q_dot_set = robot_state.get_q_dot_set().flatten().tolist()
+        msg.q_dotdot_set = robot_state.get_q_dotdot_set().flatten().tolist()
+
+        # Populate cartesian space setpoints
+        # Handling the different order for quaternion
+        x_set_pose = Pose()
+        x_set = robot_state.get_x_set().flatten().tolist()
+        x_set_pose.position.x = x_set[0]
+        x_set_pose.position.y = x_set[1]
+        x_set_pose.position.z = x_set[2]
+        x_set_pose.orientation.w = x_set[3]
+        x_set_pose.orientation.x = x_set[4]
+        x_set_pose.orientation.y = x_set[5]
+        x_set_pose.orientation.z = x_set[6]
+        msg.x_set = x_set_pose
+
+        x_dot_set = robot_state.get_x_dot_set().flatten().tolist()
+        msg.x_dot_set = Twist()
+        msg.x_dot_set.linear.x = x_dot_set[0]
+        msg.x_dot_set.linear.y = x_dot_set[1]
+        msg.x_dot_set.linear.z = x_dot_set[2]
+        msg.x_dot_set.angular.x = x_dot_set[3]
+        msg.x_dot_set.angular.y = x_dot_set[4]
+        msg.x_dot_set.angular.z = x_dot_set[5]
+
+        x_dotdot_set = robot_state.get_x_dotdot_set().flatten().tolist()
+        msg.x_dotdot_set = Twist()
+        msg.x_dotdot_set.linear.x = x_dotdot_set[0]
+        msg.x_dotdot_set.linear.y = x_dotdot_set[1]
+        msg.x_dotdot_set.linear.z = x_dotdot_set[2]
+        msg.x_dotdot_set.angular.x = x_dotdot_set[3]
+        msg.x_dotdot_set.angular.y = x_dotdot_set[4]
+        msg.x_dotdot_set.angular.z = x_dotdot_set[5]
+
+        # Populate other setpoints
+        msg.q_ns_set = robot_state.get_q_d_NS().flatten().tolist()
+
+        self.robot_state_publisher.publish(msg)
+
 
     def pub_joint_state(self):
         robot_state = self.robot.state

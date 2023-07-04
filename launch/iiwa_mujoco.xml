@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<launch>
+  <arg name="fs_Control" default="1000.0"/>
+
+  <node pkg="arcros2" exec="IiwaArcNode.py" name="iiwa_arc_ros_bridge" output="screen">
+    <param name="rate" value="$(var fs_Control)"/>
+    <param name="client_ip_addr" value="127.0.0.1"/>
+    <param name="topic_prefix" value="arc/Iiwa/"/>
+  </node>
+
+  <node pkg="arcros2" exec="iiwajoco.py" name="iiwa_mujoco_node" output="screen">
+    <param name="rate" value="$(var fs_Control)"/>
+    <param name="client_ip_addr" value="127.0.0.1"/>
+    <param name="topic_prefix" value="arc/Iiwa/"/>
+  </node>
+
+</launch>
