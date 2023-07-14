@@ -70,6 +70,10 @@ install(DIRECTORY launch
 install(PROGRAMS
   scripts/iiwajoco.py
   scripts/IiwaArcNode.py
+  rc/arcros2/Iiwa.py
+  # src/arcros2/LinearAxis.py
+  # src/arcros2/__init__.py
+  # src/arcros2/utils.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
